@@ -71,9 +71,9 @@ func getConfig(filepath string) (*healthCheckConfig, error) {
 
 	var config healthCheckConfig
 
-	yamlFile, readError := ioutil.ReadFile(filepath)
-	if readError != nil {
-		return nil, readError
+	yamlFile, fileError := ioutil.ReadFile(filepath)
+	if fileError != nil {
+		return nil, fileError
 	}
 
 	yamlError := yaml.Unmarshal(yamlFile, &config)
@@ -86,25 +86,28 @@ func getConfig(filepath string) (*healthCheckConfig, error) {
 
 func callService(modelRequest *request, headerName string) (*response, error) {
 
-	httpRequest, _ := http.NewRequest(
+	httpRequest, reqSyntaxError := http.NewRequest(
 		modelRequest.Method,
 		modelRequest.Endpoint,
 		strings.NewReader(modelRequest.Body))
+	if reqSyntaxError != nil {
+		return nil, reqSyntaxError
+	}
 
 	for key, value := range modelRequest.Header {
 		httpRequest.Header.Set(key, value)
 	}
 
-	httpResponse, err := (&http.Client{}).Do(httpRequest)
+	httpResponse, callError := (&http.Client{}).Do(httpRequest)
 
 	var actualResponse response
-	if err == nil {
+	if callError == nil {
 		actualResponse.Ok.Code = httpResponse.StatusCode
 		actualResponse.Ok.Header.Key = headerName
 		actualResponse.Ok.Header.Value = httpResponse.Header.Get(headerName)
 	}
 
-	return &actualResponse, err
+	return &actualResponse, callError
 }
 
 func responsesMatch(modelResponse *response, actualResponse *response) bool {
@@ -124,11 +127,14 @@ func responsesMatch(modelResponse *response, actualResponse *response) bool {
 
 func replaceVariables(text string, data interface{}) string {
 
-	templ, _ := template.New("msg").Parse(text)
+	templ, syntaxError := template.New("msg").Parse(text)
+	if syntaxError != nil {
+		return text
+	}
 
 	var buffer bytes.Buffer
-	templateError := templ.Execute(&buffer, data)
 
+	templateError := templ.Execute(&buffer, data)
 	if templateError != nil {
 		return text
 	}
@@ -158,10 +164,10 @@ func checkServiceRoutine(service check, notification request, waitGroup *sync.Wa
 
 	log.Printf("Calling service: %s...\n", service.Service)
 
-	actualResponse, err := callService(&service.Request, service.Response.Ok.Header.Key)
+	actualResponse, callError := callService(&service.Request, service.Response.Ok.Header.Key)
 
-	if err != nil {
-		notifyError(&notification, &service, actualResponse, err)
+	if callError != nil {
+		notifyError(&notification, &service, actualResponse, callError)
 	} else if !responsesMatch(&service.Response, actualResponse) {
 		notifyError(&notification, &service, actualResponse, errors.New("responses do not match"))
 	} else {

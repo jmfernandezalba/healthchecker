@@ -207,7 +207,24 @@ func TestReplaceVariablesOk(t *testing.T) {
 	assertEqual(t, actualResult, expectedResult)
 }
 
-func TestReplaceVariablesWrong(t *testing.T) {
+func TestReplaceVariablesWrongSyntax(t *testing.T) {
+
+	//Arrange
+	text := "template with {{.FailingService} in it"
+	data := errorReport{
+		FailingService: "example",
+	}
+
+	expectedResult := "template with {{.FailingService} in it"
+
+	//Act
+	actualResult := replaceVariables(text, data)
+
+	//Assert
+	assertEqual(t, actualResult, expectedResult)
+}
+
+func TestReplaceVariablesWrongParameter(t *testing.T) {
 
 	//Arrange
 	text := "template with {{.FailingServiceWrong}} in it"
