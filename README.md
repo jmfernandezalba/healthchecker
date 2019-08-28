@@ -16,18 +16,18 @@ docker-compose up --build
 
 2. Run program
 
-  1. From source
+   1. From source
 
-  ```
-  go run cmd/healthchecker/main.go test/testdata/healthCheckConfig.yaml
-  ```
+    ```
+    go run cmd/healthchecker/main.go test/testdata/healthCheckConfig.yaml
+    ```
 
-  2. From binary
+   2. From binary
 
-  ```
-  go build ./...
-  ./healthchecker test/testdata/healthCheckConfig.yaml
-  ```
+    ```
+    go build ./...
+    ./healthchecker test/testdata/healthCheckConfig.yaml
+    ```
 
 ## Execute tests and see coverage
 
