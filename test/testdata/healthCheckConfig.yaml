@@ -1,5 +1,5 @@
 ---
-interval: 5000
+interval: 10000
 notify:
   endpoint: "https://interview-notifier-svc.spotahome.net/api/v1/notification"
   method: POST
@@ -24,4 +24,4 @@ checks:
     ok:
       header:
         key: content-type
-        value: text/html
+        value: text/html2
