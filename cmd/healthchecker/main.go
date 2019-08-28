@@ -86,8 +86,6 @@ func getConfig(filepath string) (*healthCheckConfig, error) {
 
 func callService(modelRequest *request, headerName string) (*response, error) {
 
-	log.Printf("Model request: %+v\n", modelRequest)
-
 	httpRequest, _ := http.NewRequest(
 		modelRequest.Method,
 		modelRequest.Endpoint,
@@ -97,11 +95,7 @@ func callService(modelRequest *request, headerName string) (*response, error) {
 		httpRequest.Header.Set(key, value)
 	}
 
-	log.Printf("HTTP request: %+v\n", httpRequest)
-
 	httpResponse, err := (&http.Client{}).Do(httpRequest)
-
-	log.Printf("HTTP response: %+v\n", httpResponse)
 
 	var actualResponse response
 	if err == nil {
@@ -144,27 +138,32 @@ func replaceVariables(text string, data interface{}) string {
 
 func notifyError(notification *request, service *check, actualResponse *response, err error) {
 
-	log.Printf("Expected response: %+v\n", service.Response)
-	log.Printf("Actual response: %+v\n", actualResponse)
-	log.Printf("Error: %s\n", err)
+	log.Printf(
+		"ERROR: %s, Expected vs Actual responses:\n\t%+v\n\t%+v\n\tERROR: %s\n",
+		service.Service,
+		service.Response,
+		actualResponse,
+		err)
 
 	notification.Body = replaceVariables(notification.Body, errorReport{service.Service, err})
 
-	callService(notification, "")
+	notifyResponse, notifyError := callService(notification, "")
+
+	if notifyError != nil || notifyResponse.Ok.Code != 200 {
+		log.Printf("ERROR: notification error %s\n\t%+v\n", notifyError, notifyResponse)
+	}
 }
 
 func checkServiceRoutine(service check, notification request, waitGroup *sync.WaitGroup) {
 
-	log.Printf("Calling service: %s...\n\n", service.Service)
+	log.Printf("Calling service: %s...\n", service.Service)
 
 	actualResponse, err := callService(&service.Request, service.Response.Ok.Header.Key)
 
 	if err != nil {
-		log.Printf("ERROR: %s\n", service.Service)
 		notifyError(&notification, &service, actualResponse, err)
 	} else if !responsesMatch(&service.Response, actualResponse) {
-		log.Printf("ERROR: %s\n", service.Service)
-		notifyError(&notification, &service, actualResponse, errors.New("response does not match"))
+		notifyError(&notification, &service, actualResponse, errors.New("responses do not match"))
 	} else {
 		log.Printf("SUCCESS: %s\n", service.Service)
 	}
@@ -193,11 +192,11 @@ func startCheckerRoutine(config *healthCheckConfig) *time.Ticker {
 
 		for ; true; <-ticker.C {
 
-			log.Print("Starting loop...\n\n\n")
+			log.Print("Starting loop...\n\n")
 
 			checkAllServices(config)
 
-			log.Print("Loop finished.\n\n\n")
+			log.Print("Loop finished.\n\n")
 		}
 	}()
 
