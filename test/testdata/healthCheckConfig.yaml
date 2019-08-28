@@ -1,0 +1,27 @@
+---
+interval: 5000
+notify:
+  endpoint: "https://interview-notifier-svc.spotahome.net/api/v1/notification"
+  method: POST
+  header:
+    authorization: Bearer XXXXXXXXXXXXXXXXXXXX
+  body: "{\"service\": \"{{.FailingService}}\", \"description\": \"{{.FailingServiceDescription}}\"}"
+checks:
+- service: google
+  request:
+    endpoint: "https://www.google.com"
+    method: GET
+  response:
+    ok:
+      code: 200
+- service: headerAndAuth
+  request:
+    endpoint: "https://jigsaw.w3.org/HTTP/Basic/"
+    header:
+      authorization: Basic Z3Vlc3Q6Z3Vlc3Q=
+    method: GET
+  response:
+    ok:
+      header:
+        key: content-type
+        value: text/html

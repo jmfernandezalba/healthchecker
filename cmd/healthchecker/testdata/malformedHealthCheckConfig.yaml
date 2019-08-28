@@ -1,0 +1,33 @@
+---
+interval: 5000
+notify:
+   endpoint: https://interview-notifier-svc.spotahome.net/api/v1/notification
+  method: POST
+  header:
+    authorization: Bearer XXXXXXXXXXXXXXXXXXXX
+  body: "{\"service\": \"{{.FailingService}}\", \"description\": \"{{.FailingServiceDescription}}\"}"
+checks:
+- service: myapp
+  request:
+    endpoint: "http://myapp.com/check"
+    method: GET
+  response:
+    ok:
+      code: 200
+- service: otherapp-euwest1
+  request:
+    endpoint: "https://euwest1.otherapp.io/checks"
+    method: POST
+    body: "{\"checker\": \"spotahome\"}"
+  response:
+    ok:
+      header:
+        key: healthcheck
+        value: ok
+- service: important-service
+  request:
+    endpoint: "http://awesome-teapot.io:18976/healthz/live"
+    method: GET
+  response:
+    ok:
+      code: 418
